@@ -1,158 +1,175 @@
--- ============================================
--- Pharmacy Management System Database
--- ============================================
-CREATE DATABASE IF NOT EXISTS pharmacy_db;
-USE pharmacy_db;
+-- database/pharmacy_db.sql
+CREATE DATABASE IF NOT EXISTS `pharmacy_db` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE `pharmacy_db`;
 
--- ---------------- USERS ----------------
-CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    full_name VARCHAR(100) NOT NULL,
-    email VARCHAR(100),
-    role ENUM('Administrator','Pharmacist','Staff') NOT NULL DEFAULT 'Staff',
-    status ENUM('Active','Inactive') NOT NULL DEFAULT 'Active',
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 1. Table: users
+CREATE TABLE IF NOT EXISTS `users` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `username` varchar(50) NOT NULL UNIQUE,
+  `password` varchar(255) NOT NULL,
+  `full_name` varchar(100) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `role` enum('Admin','Pharmacist','Staff') NOT NULL DEFAULT 'Staff',
+  `status` enum('Active','Inactive') DEFAULT 'Active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- Default admin -> username: admin / password: admin123
-INSERT INTO users (username, password, full_name, email, role, status)
-VALUES ('admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Administrator', 'admin@pharmacy.com', 'Administrator', 'Active');
+-- បន្ថែមគណនី Admin ដំបូង (Username: admin | Password: admin123)
+INSERT INTO `users` (`id`, `username`, `password`, `full_name`, `phone`, `role`, `status`) 
+VALUES (1, 'admin', '$2y$10$e.w2pI63J9p2w/ZqD.H0uOHgR/C4FjV6Z6jL4xY3vG2WJ9zO/Z4.e', 'Administrator', '012345678', 'Admin', 'Active')
+ON DUPLICATE KEY UPDATE `id`=`id`;
 
--- ---------------- CATEGORIES ----------------
-CREATE TABLE categories (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    description VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 2. Table: categories
+CREATE TABLE IF NOT EXISTS `categories` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `category_name` varchar(100) NOT NULL,
+  `description` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-INSERT INTO categories (name, description) VALUES
-('Tablets','Solid oral dosage form'),
-('Capsules','Gelatin shell dosage form'),
-('Syrup','Liquid oral medicine'),
-('Injection','Injectable medicine'),
-('Cream','Topical dosage form');
+-- 3. Table: suppliers
+CREATE TABLE IF NOT EXISTS `suppliers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `supplier_name` varchar(150) NOT NULL,
+  `contact_name` varchar(100) DEFAULT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- SUPPLIERS ----------------
-CREATE TABLE suppliers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    company_name VARCHAR(150) NOT NULL,
-    contact_person VARCHAR(100),
-    phone VARCHAR(30),
-    email VARCHAR(100),
-    address VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 4. Table: medicines
+CREATE TABLE IF NOT EXISTS `medicines` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `barcode` varchar(50) DEFAULT NULL,
+  `medicine_name` varchar(255) NOT NULL,
+  `category_id` int(11) DEFAULT NULL,
+  `supplier_id` int(11) DEFAULT NULL,
+  `buying_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `selling_price` decimal(10,2) NOT NULL DEFAULT 0.00,
+  `quantity` int(11) NOT NULL DEFAULT 0,
+  `expiry_date` date DEFAULT NULL,
+  `image` varchar(255) DEFAULT NULL,
+  `status` enum('Active','Inactive') DEFAULT 'Active',
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_category` (`category_id`),
+  KEY `fk_supplier` (`supplier_id`),
+  CONSTRAINT `fk_category` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE SET NULL,
+  CONSTRAINT `fk_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- CUSTOMERS ----------------
-CREATE TABLE customers (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
-    phone VARCHAR(30),
-    email VARCHAR(100),
-    address VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
+-- 5. Table: customers
+CREATE TABLE IF NOT EXISTS `customers` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `name` varchar(100) NOT NULL,
+  `phone` varchar(20) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- MEDICINES ----------------
-CREATE TABLE medicines (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    medicine_code VARCHAR(50) NOT NULL UNIQUE,
-    medicine_name VARCHAR(150) NOT NULL,
-    category_id INT,
-    brand VARCHAR(100),
-    supplier_id INT,
-    unit_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-    selling_price DECIMAL(10,2) NOT NULL DEFAULT 0,
-    quantity INT NOT NULL DEFAULT 0,
-    expiry_date DATE,
-    manufacture_date DATE,
-    batch_number VARCHAR(50),
-    description TEXT,
-    image VARCHAR(255),
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL
-);
+-- 6. Table: purchases
+CREATE TABLE IF NOT EXISTS `purchases` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `purchase_no` varchar(50) NOT NULL,
+  `supplier_id` int(11) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `note` text DEFAULT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_purchase_supplier` (`supplier_id`),
+  KEY `fk_purchase_user` (`user_id`),
+  CONSTRAINT `fk_purchase_supplier` FOREIGN KEY (`supplier_id`) REFERENCES `suppliers` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_purchase_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- PURCHASES ----------------
-CREATE TABLE purchases (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    invoice_number VARCHAR(50) NOT NULL UNIQUE,
-    supplier_id INT,
-    purchase_date DATE NOT NULL,
-    total_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-    user_id INT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (supplier_id) REFERENCES suppliers(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
+-- 7. Table: purchase_items
+CREATE TABLE IF NOT EXISTS `purchase_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `purchase_id` int(11) NOT NULL,
+  `medicine_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_pi_purchase` (`purchase_id`),
+  KEY `fk_pi_medicine` (`medicine_id`),
+  CONSTRAINT `fk_pi_purchase` FOREIGN KEY (`purchase_id`) REFERENCES `purchases` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_pi_medicine` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE purchase_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    purchase_id INT NOT NULL,
-    medicine_id INT NOT NULL,
-    quantity INT NOT NULL,
-    unit_price DECIMAL(10,2) NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (purchase_id) REFERENCES purchases(id) ON DELETE CASCADE,
-    FOREIGN KEY (medicine_id) REFERENCES medicines(id)
-);
+-- 8. Table: sales
+CREATE TABLE IF NOT EXISTS `sales` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `invoice_no` varchar(50) NOT NULL,
+  `user_id` int(11) NOT NULL,
+  `customer_id` int(11) DEFAULT NULL,
+  `total_amount` decimal(10,2) NOT NULL,
+  `discount` decimal(10,2) DEFAULT 0.00,
+  `grand_total` decimal(10,2) NOT NULL,
+  `paid_amount` decimal(10,2) NOT NULL,
+  `due_amount` decimal(10,2) DEFAULT 0.00,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_sale_user` (`user_id`),
+  KEY `fk_sale_customer` (`customer_id`),
+  CONSTRAINT `fk_sale_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sale_customer` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE SET NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- SALES (POS) ----------------
-CREATE TABLE sales (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    invoice_number VARCHAR(50) NOT NULL UNIQUE,
-    customer_id INT,
-    sale_date DATETIME DEFAULT CURRENT_TIMESTAMP,
-    subtotal DECIMAL(10,2) NOT NULL DEFAULT 0,
-    discount DECIMAL(10,2) NOT NULL DEFAULT 0,
-    tax DECIMAL(10,2) NOT NULL DEFAULT 0,
-    total DECIMAL(10,2) NOT NULL DEFAULT 0,
-    payment_received DECIMAL(10,2) NOT NULL DEFAULT 0,
-    change_amount DECIMAL(10,2) NOT NULL DEFAULT 0,
-    user_id INT,
-    FOREIGN KEY (customer_id) REFERENCES customers(id) ON DELETE SET NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
+-- 9. Table: sale_items
+CREATE TABLE IF NOT EXISTS `sale_items` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `sale_id` int(11) NOT NULL,
+  `medicine_id` int(11) NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `unit_price` decimal(10,2) NOT NULL,
+  `total_price` decimal(10,2) NOT NULL,
+  PRIMARY KEY (`id`),
+  KEY `fk_si_sale` (`sale_id`),
+  KEY `fk_si_medicine` (`medicine_id`),
+  CONSTRAINT `fk_si_sale` FOREIGN KEY (`sale_id`) REFERENCES `sales` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_si_medicine` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE TABLE sale_items (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    sale_id INT NOT NULL,
-    medicine_id INT NOT NULL,
-    quantity INT NOT NULL,
-    price DECIMAL(10,2) NOT NULL,
-    subtotal DECIMAL(10,2) NOT NULL,
-    FOREIGN KEY (sale_id) REFERENCES sales(id) ON DELETE CASCADE,
-    FOREIGN KEY (medicine_id) REFERENCES medicines(id)
-);
+-- 10. Table: stock_history
+CREATE TABLE IF NOT EXISTS `stock_history` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `medicine_id` int(11) NOT NULL,
+  `type` enum('IN','OUT') NOT NULL,
+  `quantity` int(11) NOT NULL,
+  `note` text DEFAULT NULL,
+  `user_id` int(11) NOT NULL,
+  `created_at` timestamp NOT NULL DEFAULT current_timestamp(),
+  PRIMARY KEY (`id`),
+  KEY `fk_sh_medicine` (`medicine_id`),
+  KEY `fk_sh_user` (`user_id`),
+  CONSTRAINT `fk_sh_medicine` FOREIGN KEY (`medicine_id`) REFERENCES `medicines` (`id`) ON DELETE CASCADE,
+  CONSTRAINT `fk_sh_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- STOCK MOVEMENTS ----------------
-CREATE TABLE stock_movements (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    medicine_id INT NOT NULL,
-    type ENUM('IN','OUT') NOT NULL,
-    quantity INT NOT NULL,
-    reason VARCHAR(255),
-    movement_date TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    user_id INT,
-    FOREIGN KEY (medicine_id) REFERENCES medicines(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
-);
+-- 11. Table: settings
+CREATE TABLE IF NOT EXISTS `settings` (
+  `id` int(11) NOT NULL AUTO_INCREMENT,
+  `store_name` varchar(255) NOT NULL,
+  `phone` varchar(50) DEFAULT NULL,
+  `email` varchar(100) DEFAULT NULL,
+  `address` text DEFAULT NULL,
+  `logo` varchar(255) DEFAULT 'logo.png',
+  `exchange_rate` int(11) DEFAULT 4100,
+  `currency_symbol` varchar(10) DEFAULT '$',
+  `tax_rate` decimal(5,2) DEFAULT 0.00,
+  `receipt_footer` text DEFAULT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
--- ---------------- SETTINGS ----------------
-CREATE TABLE settings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    pharmacy_name VARCHAR(150) DEFAULT 'My Pharmacy',
-    address VARCHAR(255),
-    phone VARCHAR(30),
-    email VARCHAR(100),
-    tax_rate DECIMAL(5,2) DEFAULT 0,
-    currency VARCHAR(10) DEFAULT 'USD',
-    logo VARCHAR(255)
-);
-
-INSERT INTO settings (pharmacy_name, address, phone, tax_rate, currency)
-VALUES ('My Pharmacy', 'Phnom Penh, Cambodia', '012345678', 10.00, 'USD');
+-- ទិន្នន័យគំរូសម្រាប់ Settings
+INSERT INTO `settings` (`id`, `store_name`, `phone`, `email`, `address`, `exchange_rate`, `currency_symbol`, `tax_rate`, `receipt_footer`) 
+VALUES (1, 'ឱសថស្ថាន សុខភាព', '012 345 678', 'info@pharmacy.com', 'ភ្នំពេញ, កម្ពុជា', 4100, '$', 0.00, 'សូមអរគុណ! សូមអញ្ជើញមកម្តងទៀត!')
+ON DUPLICATE KEY UPDATE `id`=`id`;

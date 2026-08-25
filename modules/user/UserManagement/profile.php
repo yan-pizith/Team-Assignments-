@@ -1,0 +1,1 @@
+<?php header("Location: edit_user.php?id=" . ($_SESSION['user_id'] ?? 1)); exit; ?>

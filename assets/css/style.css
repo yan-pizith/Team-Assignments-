@@ -1,0 +1,320 @@
+/* ==========================================================================
+   1. GLOBAL STYLES & VARIABLES
+   ========================================================================== */
+@import url('https://fonts.googleapis.com/css2?family=Kantumruy+Pro:wght@300;400;500;600;700&display=swap');
+
+:root {
+    --primary: #1a73e8;
+    /* Blue - Google Style */
+    --secondary: #5f6368;
+    --success: #1e8e3e;
+    /* Green - Stock In/Sale */
+    --danger: #d93025;
+    /* Red - Expiry/Stock Out */
+    --warning: #f9ab00;
+    /* Yellow - Low Stock */
+    --dark-bg: #202124;
+    --light-bg: #f8f9fa;
+    --sidebar-bg: #ffffff;
+    --border-color: #dadce0;
+    --sidebar-width: 260px;
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Kantumruy Pro', sans-serif;
+    background-color: var(--light-bg);
+    color: #3c4043;
+    overflow-x: hidden;
+}
+
+a {
+    text-decoration: none;
+    color: inherit;
+}
+
+/* ==========================================================================
+   2. LOGIN PAGE (index.php)
+   ========================================================================== */
+.login-container {
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a73e8 0%, #0d47a1 100%);
+}
+
+.login-card {
+    background: white;
+    padding: 40px;
+    border-radius: 12px;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+    width: 100%;
+    max-width: 400px;
+    text-align: center;
+}
+
+.login-card img {
+    width: 80px;
+    margin-bottom: 20px;
+}
+
+.login-card h4 {
+    font-weight: 700;
+    margin-bottom: 25px;
+    color: var(--primary);
+}
+
+/* ==========================================================================
+   3. LAYOUT: SIDEBAR & NAVBAR
+   ========================================================================== */
+#sidebar {
+    width: var(--sidebar-width);
+    height: 100vh;
+    position: fixed;
+    left: 0;
+    top: 0;
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--border-color);
+    z-index: 1000;
+    transition: all 0.3s;
+}
+
+#sidebar .sidebar-header {
+    padding: 20px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    align-items: center;
+}
+
+#sidebar .sidebar-header img {
+    width: 40px;
+    margin-right: 10px;
+}
+
+#sidebar ul.menu-list {
+    list-style: none;
+    padding: 10px 0;
+}
+
+#sidebar ul li a {
+    padding: 12px 20px;
+    display: flex;
+    align-items: center;
+    color: var(--secondary);
+    font-weight: 500;
+    transition: 0.2s;
+}
+
+#sidebar ul li a i {
+    width: 30px;
+    font-size: 18px;
+}
+
+#sidebar ul li a:hover,
+#sidebar ul li.active a {
+    background-color: #e8f0fe;
+    color: var(--primary);
+    border-radius: 0 25px 25px 0;
+    margin-right: 10px;
+}
+
+.navbar-custom {
+    margin-left: var(--sidebar-width);
+    background: white;
+    padding: 15px 30px;
+    border-bottom: 1px solid var(--border-color);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+/* ==========================================================================
+   4. CONTENT & MODULES (Medicine, Category, User)
+   ========================================================================== */
+.main-content {
+    margin-left: var(--sidebar-width);
+    padding: 30px;
+    min-height: calc(100vh - 70px);
+}
+
+.card-custom {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+}
+
+/* Tables Styling */
+.table-responsive {
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.table thead {
+    background-color: #f1f3f4;
+}
+
+.table th {
+    font-weight: 600;
+    border-bottom: 2px solid var(--border-color);
+}
+
+.table td {
+    vertical-align: middle;
+}
+
+/* Status Badges */
+.badge-stock-in {
+    background: #e6f4ea;
+    color: var(--success);
+}
+
+.badge-stock-out {
+    background: #fce8e6;
+    color: var(--danger);
+}
+
+.badge-expired {
+    background: #feefe3;
+    color: var(--warning);
+}
+
+/* ==========================================================================
+   5. POS INTERFACE (modules/sales/pos.php)
+   ========================================================================== */
+.pos-wrapper {
+    display: flex;
+    gap: 20px;
+}
+
+.medicine-grid {
+    flex: 2;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 15px;
+    height: 80vh;
+    overflow-y: auto;
+}
+
+.medicine-card {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 10px;
+    padding: 15px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.medicine-card:hover {
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.medicine-card img {
+    width: 100%;
+    height: 120px;
+    object-fit: cover;
+    border-radius: 5px;
+}
+
+.medicine-card h6 {
+    margin-top: 10px;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.medicine-card .price {
+    color: var(--success);
+    font-weight: 700;
+}
+
+.cart-section {
+    flex: 1;
+    background: white;
+    border-left: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 85vh;
+}
+
+.cart-table {
+    flex-grow: 1;
+    overflow-y: auto;
+}
+
+.cart-summary {
+    background: #f8f9fa;
+    padding: 20px;
+    border-radius: 8px;
+}
+
+.grand-total {
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--primary);
+}
+
+/* ==========================================================================
+   6. PRINT STYLE (print_receipt.php)
+   ========================================================================== */
+@media print {
+    body * {
+        visibility: hidden;
+    }
+
+    #receipt-print,
+    #receipt-print * {
+        visibility: visible;
+    }
+
+    #receipt-print {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 80mm;
+        /* Standard thermal paper size */
+        font-family: 'Kantumruy Pro', sans-serif;
+    }
+}
+
+/* ==========================================================================
+   7. DASHBOARD STATS (modules/dashboard)
+   ========================================================================== */
+.stat-card {
+    padding: 25px;
+    color: white;
+    border-radius: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.stat-blue {
+    background: #4285f4;
+}
+
+.stat-green {
+    background: #34a853;
+}
+
+.stat-orange {
+    background: #fbbc04;
+}
+
+.stat-red {
+    background: #ea4335;
+}
+
+.stat-card i {
+    font-size: 40px;
+    opacity: 0.5;
+}

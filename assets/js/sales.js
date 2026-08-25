@@ -1,76 +1,87 @@
+// assets/js/sales.js
 let cart = [];
 
-const searchInput = document.getElementById('search_input');
-const searchResults = document.getElementById('search_results');
-
-// AJAX Search
-searchInput.addEventListener('input', function () {
+document.getElementById('search_medicine').addEventListener('input', function () {
     let q = this.value.trim();
-    if (q.length > 0) {
-        fetch(`../../api/search_api.php?q=${encodeURIComponent(q)}`)
-            .then(res => res.json())
-            .then(data => {
-                searchResults.innerHTML = '';
-                data.forEach(item => {
-                    let a = document.createElement('a');
-                    a.className = 'list-group-item list-group-item-action d-flex justify-content-between';
-                    a.innerHTML = `<span><b>${item.medicine_name}</b> (${item.medicine_code})</span> 
-                                   <span class="badge bg-primary">$${item.selling_price} (ស្តុក: ${item.quantity})</span>`;
-                    a.onclick = () => addToCart(item);
-                    searchResults.appendChild(a);
+    let resultDiv = document.getElementById('search_result');
+    if (q.length < 1) { resultDiv.innerHTML = ''; return; }
+
+    fetch(`../../api/medicine_api.php?q=${q}`)
+        .then(res => res.json())
+        .then(res => {
+            if (res.success && res.data.length > 0) {
+                let html = '';
+                res.data.forEach(item => {
+                    html += `<a href="#" class="list-group-item list-group-item-action" onclick="addToCart(${item.id}, '${item.medicine_name}', ${item.selling_price}, ${item.quantity})">
+                                <b>${item.medicine_name}</b> - $${item.selling_price} (ស្តុក: ${item.quantity})
+                             </a>`;
                 });
-            });
-    } else {
-        searchResults.innerHTML = '';
-    }
+                resultDiv.innerHTML = html;
+            } else {
+                resultDiv.innerHTML = '<div class="list-group-item text-muted">រកមិនឃើញទំនិញទេ</div>';
+            }
+        });
 });
 
-function addToCart(item) {
-    searchResults.innerHTML = '';
-    searchInput.value = '';
+function addToCart(id, name, price, stock) {
+    document.getElementById('search_result').innerHTML = '';
+    document.getElementById('search_medicine').value = '';
 
-    let existing = cart.find(x => x.id === item.id);
-    if (existing) {
-        if (existing.qty < item.quantity) {
-            existing.qty++;
+    let exist = cart.find(i => i.id === id);
+    if (exist) {
+        if (exist.qty < stock) {
+            exist.qty++;
         } else {
-            alert('ចំនួនស្តុកមិនគ្រប់គ្រាន់ឡើយ!');
+            alert('ចំនួនទិញលើសពីចំនួនស្តុកដែលមាន!');
         }
     } else {
-        cart.push({ id: item.id, name: item.medicine_name, price: parseFloat(item.selling_price), qty: 1, maxQty: item.quantity });
+        cart.push({ id, name, price, qty: 1, stock });
     }
     renderCart();
 }
 
 function renderCart() {
-    let tbody = document.getElementById('cart_body');
+    let tbody = document.querySelector('#cart_table tbody');
     tbody.innerHTML = '';
     let subtotal = 0;
 
     cart.forEach((item, index) => {
-        let total = item.price * item.qty;
-        subtotal += total;
-
+        let itemTotal = item.price * item.qty;
+        subtotal += itemTotal;
         tbody.innerHTML += `
             <tr>
-                <td>${item.name} <input type="hidden" name="items[${index}][id]" value="${item.id}"></td>
+                <td>${item.name}</td>
                 <td>$${item.price.toFixed(2)}</td>
-                <td><input type="number" name="items[${index}][qty]" value="${item.qty}" min="1" max="${item.maxQty}" onchange="updateQty(${index}, this.value)" class="form-control form-control-sm"></td>
-                <td>$${total.toFixed(2)}</td>
-                <td><button type="button" onclick="removeItem(${index})" class="btn btn-sm btn-outline-danger"><i class="fa-solid fa-xmark"></i></button></td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" value="${item.qty}" min="1" max="${item.stock}" onchange="updateQty(${index}, this.value)">
+                </td>
+                <td>$${itemTotal.toFixed(2)}</td>
+                <td class="text-center">
+                    <button class="btn btn-sm btn-outline-danger" onclick="removeItem(${index})"><i class="fa-solid fa-times"></i></button>
+                </td>
             </tr>
         `;
     });
 
-    let discount = parseFloat(document.getElementById('discount_input').value) || 0;
+    let discount = parseFloat(document.getElementById('txt_discount').value) || 0;
     let grandTotal = Math.max(0, subtotal - discount);
+    let paid = parseFloat(document.getElementById('txt_paid').value) || 0;
+    let due = Math.max(0, paid - grandTotal);
 
-    document.getElementById('subtotal_val').innerText = `$${subtotal.toFixed(2)}`;
-    document.getElementById('grand_total_val').innerText = `$${grandTotal.toFixed(2)}`;
+    document.getElementById('txt_subtotal').innerText = `$${subtotal.toFixed(2)}`;
+    document.getElementById('txt_grand_total').innerText = `$${grandTotal.toFixed(2)}`;
+    document.getElementById('txt_grand_total_khr').innerText = `${(grandTotal * EXCHANGE_RATE).toLocaleString()} ៛`;
+    document.getElementById('txt_due').innerText = `$${due.toFixed(2)}`;
 }
 
 function updateQty(index, qty) {
-    cart[index].qty = parseInt(qty) || 1;
+    let val = parseInt(qty);
+    if (val > cart[index].stock) {
+        alert('ចំនួនទិញលើសពីចំនួនស្តុក!');
+        cart[index].qty = cart[index].stock;
+    } else {
+        cart[index].qty = val > 0 ? val : 1;
+    }
     renderCart();
 }
 
@@ -79,4 +90,35 @@ function removeItem(index) {
     renderCart();
 }
 
-document.getElementById('discount_input').addEventListener('input', renderCart);
+document.getElementById('txt_discount').addEventListener('input', renderCart);
+document.getElementById('txt_paid').addEventListener('input', renderCart);
+
+document.getElementById('btn_checkout').addEventListener('click', function () {
+    if (cart.length === 0) { alert('សូមជ្រើសរើសទំនិញយ៉ាងហោចណាស់មួយ!'); return; }
+
+    let payload = {
+        customer_id: document.getElementById('customer_id').value,
+        items: cart,
+        total_amount: parseFloat(document.getElementById('txt_subtotal').innerText.replace('$', '')),
+        discount: parseFloat(document.getElementById('txt_discount').value) || 0,
+        grand_total: parseFloat(document.getElementById('txt_grand_total').innerText.replace('$', '')),
+        paid_amount: parseFloat(document.getElementById('txt_paid').value) || 0,
+        due_amount: parseFloat(document.getElementById('txt_due').innerText.replace('$', ''))
+    };
+
+    fetch('../../modules/sales/cart_process.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+    })
+        .then(res => res.json())
+        .then(res => {
+            if (res.success) {
+                window.open(`../../modules/sales/print_receipt.php?id=${res.sale_id}`, '_blank');
+                cart = [];
+                renderCart();
+            } else {
+                alert(res.message || 'មានបញ្ហាក្នុងការរក្សាទុក!');
+            }
+        });
+});

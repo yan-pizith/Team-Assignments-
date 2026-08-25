@@ -1,13 +1,14 @@
 <?php
-require_once "../../includes/auth_check.php";
-require_once "../../config/database.php";
+session_start();
+require_once '../../config/database.php';
+require_once '../../includes/auth_check.php';
 
 $id = $_GET['id'] ?? null;
 if ($id) {
-    $stmt = $pdo->prepare("DELETE FROM suppliers WHERE id = :id");
-    $stmt->execute(['id' => $id]);
-    $_SESSION['success'] = "លុបអ្នកផ្គត់ផ្គង់បានជោគជ័យ!";
+    $database = new Database();
+    $db = $database->getConnection();
+    $stmt = $db->prepare("DELETE FROM suppliers WHERE id = :id");
+    $stmt->execute([':id' => $id]);
 }
-header("Location: supplier_list.php");
-exit();
-?>
+header("Location: supplier_list.php?msg=deleted");
+exit;

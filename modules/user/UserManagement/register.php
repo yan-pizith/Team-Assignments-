@@ -1,0 +1,1 @@
+<?php header("Location: add_user.php"); exit; ?>

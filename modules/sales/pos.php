@@ -1,84 +1,112 @@
 <?php
-// modules/sales/pos.php
-require_once "../../includes/auth_check.php";
-require_once "../../config/database.php";
+session_start();
+require_once '../../config/database.php';
+require_once '../../includes/auth_check.php';
 
-$customers = $pdo->query("SELECT * FROM customers")->fetchAll();
-include "../../includes/header.php";
+$database = new Database();
+$db = $database->getConnection();
+
+$medicines = $db->query("SELECT * FROM medicines WHERE stock_quantity > 0")->fetchAll(PDO::FETCH_ASSOC);
+$customers = $db->query("SELECT * FROM customers")->fetchAll(PDO::FETCH_ASSOC);
+
+require_once '../../includes/header.php';
 ?>
 
-<div class="d-flex">
-    <?php include "../../includes/sidebar.php"; ?>
-    <div class="w-100">
-        <?php include "../../includes/navbar.php"; ?>
-        
-        <div class="p-3">
-            <h4 class="mb-3"><i class="fa-solid fa-cart-shopping"></i> POS System (លក់ថ្នាំ)</h4>
-            
-            <div class="row g-3">
-                <!-- ផ្នែកខាងឆ្វេង: ស្វែងរកថ្នាំ -->
-                <div class="col-md-6">
-                    <div class="card shadow-sm mb-3">
-                        <div class="card-body">
-                            <label class="form-label fw-bold">ស្វែងរកថ្នាំ (កូដ ឬ ឈ្មោះថ្នាំ)</label>
-                            <input type="text" id="search_input" class="form-control form-control-lg" placeholder="វាយបញ្ចូលឈ្មោះ ឬ ស្កែន Barcode..." autofocus autocomplete="off">
-                            <div id="search_results" class="list-group position-absolute w-100 shadow-sm mt-1" style="z-index: 1000; max-height: 250px; overflow-y: auto;"></div>
+<div class="container-fluid p-3">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h4><i class="bi bi-cart-check me-2"></i>ប្រព័ន្ធលក់ POS</h4>
+        <a href="../../dashboard.php" class="btn btn-secondary btn-sm">ត្រឡប់ទៅ Dashboard</a>
+    </div>
+
+    <div class="row">
+        <div class="col-md-7">
+            <div class="card shadow-sm p-3">
+                <input type="text" id="search" class="form-control mb-3" placeholder="ស្វែងរកឱសថ...">
+                <div class="row g-2" style="max-height: 500px; overflow-y: auto;">
+                    <?php foreach ($medicines as $m): ?>
+                    <div class="col-md-4">
+                        <div class="card h-100 p-2 text-center shadow-sm" style="cursor: pointer;" onclick="addToCart(<?= $m['id']; ?>, '<?= htmlspecialchars($m['name']); ?>', <?= $m['price']; ?>, <?= $m['stock_quantity']; ?>)">
+                            <h6><?= htmlspecialchars($m['name']); ?></h6>
+                            <p class="text-success fw-bold mb-1">$<?= number_format($m['price'], 2); ?></p>
+                            <small class="text-muted">ស្តុក៖ <?= $m['stock_quantity']; ?></small>
                         </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
+            </div>
+        </div>
 
-                <!-- ផ្នែកខាងស្តាំ: កន្ត្រកទំនិញ & គិតលុយ -->
-                <div class="col-md-6">
-                    <form action="cart_process.php" method="POST">
-                        <div class="card shadow-sm">
-                            <div class="card-header bg-dark text-white d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">បញ្ជីទំនិញក្នុងកន្ត្រក</h6>
-                                <select name="customer_id" class="form-select form-select-sm w-50">
-                                    <option value="">-- អតិថិជនទូទៅ (General) --</option>
-                                    <?php foreach ($customers as $cust): ?>
-                                        <option value="<?= $cust['id']; ?>"><?= htmlspecialchars($cust['name']); ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="card-body p-0">
-                                <table class="table table-sm align-middle mb-0" id="cart_table">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>ឈ្មោះថ្នាំ</th>
-                                            <th width="15%">តម្លៃ</th>
-                                            <th width="20%">ចំនួន</th>
-                                            <th width="20%">សរុប</th>
-                                            <th width="10%"></th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="cart_body">
-                                        <!-- Items នឹងបង្ហាញតាម JS -->
-                                    </tbody>
-                                </table>
-                            </div>
-                            <div class="card-footer bg-light p-3">
-                                <div class="d-flex justify-content-between mb-2">
-                                    <span>សរុប (Subtotal):</span>
-                                    <strong id="subtotal_val">$0.00</strong>
-                                </div>
-                                <div class="d-flex justify-content-between mb-2 align-items-center">
-                                    <span>បញ្ចុះតម្លៃ ($):</span>
-                                    <input type="number" step="0.01" name="discount" id="discount_input" class="form-control form-control-sm text-end w-25" value="0.00">
-                                </div>
-                                <hr>
-                                <div class="d-flex justify-content-between mb-3">
-                                    <h5 class="fw-bold">ប្រាក់ត្រូវទូទាត់:</h5>
-                                    <h4 class="text-danger fw-bold" id="grand_total_val">$0.00</h4>
-                                </div>
-                                <button type="submit" name="btn_checkout" class="btn btn-success btn-lg w-100"><i class="fa-solid fa-print"></i> គិតលុយ & បោះពុម្ពវិក្កយបត្រ</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
+        <div class="col-md-5">
+            <div class="card shadow-sm p-3">
+                <h5>កន្ត្រកទំនិញ</h5>
+                <select id="customer_id" class="form-select mb-3">
+                    <option value="">-- អតិថិជនទូទៅ --</option>
+                    <?php foreach ($customers as $c): ?>
+                        <option value="<?= $c['id']; ?>"><?= htmlspecialchars($c['name']); ?></option>
+                    <?php endforeach; ?>
+                </select>
+                <table class="table table-sm">
+                    <thead>
+                        <tr><th>ឱសថ</th><th>ចំនួន</th><th>តម្លៃ</th><th></th></tr>
+                    </thead>
+                    <tbody id="cart-list"></tbody>
+                </table>
+                <hr>
+                <h4 class="d-flex justify-content-between">
+                    <span>សរុប៖</span>
+                    <span id="grand-total" class="text-primary">$0.00</span>
+                </h4>
+                <button onclick="checkout()" class="btn btn-success w-100 mt-3 btn-lg">គិតលុយ (Checkout)</button>
             </div>
         </div>
     </div>
 </div>
 
-<script src="../../assets/js/sales.js"></script>
-<?php include "../../includes/footer.php"; ?>
+<script>
+let cart = [];
+function addToCart(id, name, price, stock) {
+    let item = cart.find(i => i.id === id);
+    if (item) {
+        if (item.qty < stock) item.qty++;
+        else alert('ស្តុកមិនគ្រប់គ្រាន់!');
+    } else {
+        cart.push({ id, name, price, qty: 1, stock });
+    }
+    renderCart();
+}
+function renderCart() {
+    let html = '';
+    let total = 0;
+    cart.forEach((item, index) => {
+        let sum = item.price * item.qty;
+        total += sum;
+        html += `<tr><td>${item.name}</td><td><input type="number" value="${item.qty}" min="1" max="${item.stock}" onchange="updateQty(${index}, this.value)" style="width: 50px;"></td><td>$${sum.toFixed(2)}</td><td><button onclick="removeItem(${index})" class="btn btn-danger btn-sm">X</button></td></tr>`;
+    });
+    document.getElementById('cart-list').innerHTML = html;
+    document.getElementById('grand-total').innerText = '$' + total.toFixed(2);
+}
+function updateQty(index, qty) { cart[index].qty = parseInt(qty); renderCart(); }
+function removeItem(index) { cart.splice(index, 1); renderCart(); }
+function checkout() {
+    if (cart.length === 0) return alert('កន្ត្រកទទេ!');
+    let customer_id = document.getElementById('customer_id').value;
+    let grand_total = cart.reduce((sum, item) => sum + (item.price * item.qty), 0);
+
+    fetch('cart_process.php', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ customer_id, grand_total, cart })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            window.open('print_receipt.php?id=' + data.sale_id, '_blank');
+            location.reload();
+        } else {
+            alert('មានបញ្ហា៖ ' + data.message);
+        }
+    });
+}
+</script>
+
+<?php require_once '../../includes/footer.php'; ?>

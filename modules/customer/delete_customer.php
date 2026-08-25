@@ -1,13 +1,14 @@
 <?php
-require_once "../../includes/auth_check.php";
-require_once "../../config/database.php";
+session_start();
+require_once '../../config/database.php';
+require_once '../../includes/auth_check.php';
 
 $id = $_GET['id'] ?? null;
 if ($id) {
-    $stmt = $pdo->prepare("DELETE FROM customers WHERE id = :id");
-    $stmt->execute(['id' => $id]);
-    $_SESSION['success'] = "លុបអតិថិជនបានជោគជ័យ!";
+    $database = new Database();
+    $db = $database->getConnection();
+    $stmt = $db->prepare("DELETE FROM customers WHERE id = :id");
+    $stmt->execute([':id' => $id]);
 }
-header("Location: customer_list.php");
-exit();
-?>
+header("Location: customer_list.php?msg=deleted");
+exit;

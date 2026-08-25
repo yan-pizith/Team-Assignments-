@@ -1,0 +1,1 @@
+<?php echo "Tax Rate Setting Page"; ?>
